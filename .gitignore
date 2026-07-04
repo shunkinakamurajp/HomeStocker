@@ -1,0 +1,19 @@
+# Node.js (フロントエンド)
+node_modules/
+dist/
+.env
+
+# Python (バックエンド)
+__pycache__/
+*.pyc
+venv/
+env/
+.env
+
+# データベース (SQLite)
+*.sqlite3
+*.db
+
+# OS特有のファイル
+.DS_Store
+Thumbs.db
