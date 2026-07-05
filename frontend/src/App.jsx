@@ -1,122 +1,110 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import './App.css';
+
+// 作成した3つのコンポーネントを読み込む
+import Dashboard from './Dashboard';
+import Shopping from './Shopping';
+import Inventory from './Inventory';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('dashboard');
+  //デモ用の初期データを設定
+  const [items, setItems] = useState([
+    { id: 1, general_name: 'シャンプー', is_in_cart: false, stock_count: 1 },
+    { id: 2, general_name: '牛乳', is_in_cart: false, stock_count: 0 },
+    { id: 3, general_name: 'ティッシュ', is_in_cart: false, stock_count: 2 },
+  ]);
+  const [newItemName, setNewItemName] = useState('');
 
+  //データ処理
+  const addNewItem = () => {
+    if (newItemName.trim() === '') return;
+    const newItem = {
+      id: items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1,
+      general_name: newItemName,
+      is_in_cart: false,
+      stock_count: 0
+    };
+    setItems([...items, newItem]);
+    setNewItemName('');
+  };
+
+  // カートに追加する関数
+  const addToCart = (id) => {
+    setItems(items.map(item => item.id === id ? { ...item, is_in_cart: true } : item));
+  };
+
+  // カートから購入済みにする関数
+  const purchaseSingleItem = (id) => {
+    setItems(items.map(item => item.id === id ? { ...item, is_in_cart: false, stock_count: item.stock_count + 1 } : item));
+  };
+
+  // カート内の全アイテムを購入済みにする関数
+  const completePurchase = () => {
+    setItems(items.map(item => item.is_in_cart ? { ...item, is_in_cart: false, stock_count: item.stock_count + 1 } : item));
+  };
+
+  // 在庫数に応じて色を返す関数
+  const getStockColor = (count) => {
+    if (count === 0) return '#dc3545';
+    if (count === 1) return '#ffc107';
+    return '#28a745';
+  };
+
+  //画面表示
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-container">
+      <header className="app-header">
+        <h1 className="app-title">HomeStocker</h1>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="app-main">
+        {/* 各コンポーネントに必要なデータ(Props)を渡して呼び出す */}
+        {activeTab === 'dashboard' && (
+          <Dashboard 
+            items={items} 
+            newItemName={newItemName} 
+            setNewItemName={setNewItemName} 
+            addNewItem={addNewItem} 
+            addToCart={addToCart} 
+          />
+        )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* ここでShoppingコンポーネントとInventoryコンポーネントを条件付きでレンダリング */}
+        {activeTab === 'list' && (
+          <Shopping
+            items={items} 
+            purchaseSingleItem={purchaseSingleItem} 
+            completePurchase={completePurchase} 
+          />
+        )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* 在庫一覧 */}
+        {activeTab === 'inventory' && (
+          <Inventory 
+            items={items} 
+            getStockColor={getStockColor} 
+          />
+        )}
+      </main>
+
+      {/* ナビゲーション */}
+      <nav className="bottom-nav">
+        <button 
+          className={activeTab === 'dashboard' ? 'active' : ''} 
+          onClick={() => setActiveTab('dashboard')}
+        >ホーム</button>
+        <button 
+          className={activeTab === 'list' ? 'active' : ''} 
+          onClick={() => setActiveTab('list')}
+        >買うもの</button>
+        <button 
+          className={activeTab === 'inventory' ? 'active' : ''} 
+          onClick={() => setActiveTab('inventory')}
+        >在庫一覧</button>
+      </nav>
+    </div>
+  );
 }
 
-export default App
+export default App;
