@@ -41,7 +41,7 @@ class Consumptionlog(Base):
     id = Column(Integer, primary_key=True, index=True)
     item_id = Column(Integer, ForeignKey("items.id"))   # どのアイテムの記録か
     purchased_at = Column(Date,nullable=False)          # 買った日
-    deplates_at = Column(Date, nullable=True)           #使い切ってカゴに入れた日
+    depletes_at = Column(Date, nullable=True)           #使い切ってカゴに入れた日
 
 # 新規登録でReactから受け取るデータのルール
 class ItemCreate(BaseModel):

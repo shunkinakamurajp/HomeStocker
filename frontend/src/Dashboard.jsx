@@ -1,18 +1,44 @@
 import React from 'react';
 
 // App.jsxから渡されるpropsを受け取る
-function Dashboard({ items, newItemName, setNewItemName, addNewItem, addToCart }) {
+function Dashboard({ items, newItemName, setNewItemName, newItemCategory, setNewItemCategory, addNewItem, addToCart }) {
+  // 初期カテゴリ
+  const defaultCategories = ['食品', '日用品', '消耗品', '掃除用品', 'その他'];
+  
+  // 既存のアイテムから使われているカテゴリを抽出
+  const existingCategories = Array.from(
+    new Set(items.map(item => item.category).filter(Boolean))
+  );
+
+  // 初期カテゴリと既存カテゴリを合体させて、選択肢のリストを作る
+  const allCategories = Array.from(new Set([...defaultCategories, ...existingCategories]));
+
   return (
     <div>
       <div className="item-card">
         <h3 className="item-name">新しいアイテムを登録</h3>
         <div className="input-group">
+          {/* アイテム名入力 */}
           <input 
             type="text" 
             value={newItemName} 
             onChange={(e) => setNewItemName(e.target.value)} 
             placeholder="例：洗剤、ラップ" 
           />
+          {/* カテゴリ入力 */}
+          <input
+            type="text" 
+            list="category-options" 
+            value={newItemCategory} 
+            onChange={(e) => setNewItemCategory(e.target.value)} 
+            placeholder="カテゴリを入力または選択" 
+          />
+          {/* プルダウンの選択肢 */}
+          <datalist id="category-options">
+            {allCategories.map((cat, index) => (
+              <option key={index} value={cat} />
+            ))}
+          </datalist>
           <button className="btn btn-primary" onClick={addNewItem}>登録</button>
         </div>
       </div>

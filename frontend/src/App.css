@@ -106,15 +106,17 @@
 /* テキストボックス */
 .input-group {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
   justify-content: center;
   align-items: center;
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
 }
 
 .input-group input {
-  flex: 1;
+  width: 100%;
   padding: 10px;
   border: 2px solid var(--main-amber);
   border-radius: 5px;
@@ -122,7 +124,8 @@
 }
 
 .input-group button {
-  padding: 10px 20px;
+  width: 100%;
+  padding: 12px 20px;
   background-color: var(--main-amber);
   color: var(--main-beige);
   border: none;
