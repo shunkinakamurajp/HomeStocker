@@ -49,6 +49,8 @@ class ItemCreate(BaseModel):
     category: str
     specific_name: Optional[str] = None
     store_tag: Optional[str] = None
+    stock_count: int = 0        # 登録時に初期在庫数を指定できるようにする
+    is_in_cart: bool = False    # 登録時は必ずカート外からスタート
 
 # Reactへデータを返すときのルール（ItemCreateの項目 ＋ DBで自動付与される情報）
 class ItemResponse(ItemCreate):

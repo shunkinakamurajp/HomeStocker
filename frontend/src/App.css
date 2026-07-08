@@ -62,15 +62,20 @@
   align-items: center;
 }
 
-/* 共通カードスタイル */
+/* =========================
+   共通レイアウト・カード
+   ========================= */
 .item-card,
 .quick-add-container,
 .app-shopping-container,
-.stock-container {
+.stock-container,
+.dashboard-section,
+.summary-card,
+.alert-item {
   background-color: var(--main-beige);
   border: 2px solid var(--main-amber);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
   width: 100%;
   color: var(--main-amber);
   text-align: center;
@@ -84,8 +89,8 @@
   margin: 0 auto 15px;
 }
 
-.item-list .item-card{
-  background-color: white;
+.item-list .item-card {
+  background-color: var(--main-beige);
 }
 
 .app-shopping-container {
@@ -103,7 +108,9 @@
   color: var(--main-amber);
 }
 
-/* テキストボックス */
+/* =========================
+   フォーム・入力欄
+   ========================= */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -115,23 +122,46 @@
   margin: 0 auto;
 }
 
-.input-group input {
+.input-group input,
+.stock-input-row input,
+.form-group input {
   width: 100%;
   padding: 10px;
   border: 2px solid var(--main-amber);
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 16px;
+  background-color: #fffdf8;
+  color: var(--main-gray);
 }
 
-.input-group button {
+.input-group button,
+.quick-add-btn,
+.btn-success,
+.btn-danger,
+.delete-btn,
+.btn-submit,
+.btn-quick-add {
   width: 100%;
-  padding: 12px 20px;
+  padding: 10px 16px;
   background-color: var(--main-amber);
   color: var(--main-beige);
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.input-group button:hover,
+.quick-add-btn:hover,
+.btn-success:hover,
+.btn-danger:hover,
+.delete-btn:hover,
+.btn-submit:hover,
+.btn-quick-add:hover {
+  background-color: #a56c3e;
+  transform: translateY(-1px);
 }
 
 .item-stock {
@@ -142,7 +172,9 @@
   margin-left: 10px;
 }
 
-/* クイック追加 */
+/* =========================
+   クイック追加
+   ========================= */
 .quick-add-container {
   display: flex;
   flex-direction: column;
@@ -152,23 +184,16 @@
 }
 
 .quick-add-btn {
-  background-color: var(--main-amber);
-  color: var(--main-beige);
-  border: none;
-  padding: 10px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 15px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
 }
 
 .item-name {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--main-dark-green);
 }
 
 .quick-add-text {
@@ -185,16 +210,10 @@
 }
 
 .btn-success {
-  background-color: var(--main-amber);
-  color: var(--main-beige);
-  border: none;
-  padding: 10px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 15px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  width: auto;
 }
 
 .app-shopping-container button.btn-success {
@@ -213,14 +232,21 @@
 .item-list .item-card .item-name {
   flex: 1;
   margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--main-dark-green);
 }
 
 .item-list .item-card button {
-  min-width: 84px;
-  padding: 8px 12px;
+  min-width: 72px;
+  padding: 7px 10px;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
-/* ナビゲーションバーのスタイル */
+/* =========================
+   ナビゲーション
+   ========================= */
 .bottom-nav {
   display: flex;
   justify-content: space-evenly;
@@ -240,6 +266,56 @@
   font-size: 14px;
 }
 
+/* APIエラー時のバナー表示 */
+.error-banner {
+  width: 100%;
+  max-width: 400px;
+  background-color: #fdf7f0;
+  color: var(--main-amber);
+  border: 1px solid var(--main-amber);
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin: 0 auto 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.error-banner-close {
+  background: none;
+  border: none;
+  color: #842029;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 0 0 10px;
+}
+
+/* 初期在庫数入力の行 */
+.stock-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.stock-input-row label {
+  font-size: 14px;
+  color: var(--main-gray);
+  white-space: nowrap;
+}
+
+.stock-input-row input {
+  width: 80px;
+  padding: 8px;
+  border: 2px solid var(--main-amber);
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+
 /* ナビゲーションボタンのスタイル */
 .bottom-nav button {
   justify-content: center;
@@ -257,6 +333,434 @@
 
 /* ナビゲーションボタンのアクティブ状態のスタイル */
 .bottom-nav button.active {
-  color: var(--main-dark-green);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--main-beige);
   font-weight: bold;
+}
+
+/* =========================
+   ポップアップ（モーダル）
+   ========================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(105, 105, 105, 0.45);
+  z-index: 1000;
+  padding: 20px;
+  margin: auto;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  margin: 0 auto;
+  background-color: var(--main-beige);
+  border: 2px solid var(--main-amber);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: min(320px, 100%);
+  padding: 20px 18px;
+  text-align: center;
+  color: var(--main-amber);
+}
+
+.modal-content h3 {
+  margin: 0 0 10px;
+  color: var(--main-amber);
+  font-size: 18px;
+}
+
+.modal-content p {
+  margin: 0 0 18px;
+  color: var(--main-gray);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* =========================
+   ボタン共通スタイル
+   ========================= */
+.btn-cancel {
+  padding: 10px 16px;
+  border: 1px solid var(--main-amber);
+  background-color: var(--main-beige);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--main-amber);
+  font-weight: 600;
+}
+
+.btn-danger,
+delete-btn {
+  padding: 10px 16px;
+  border: none;
+  background-color: var(--main-amber);
+  color: var(--main-beige);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-cancel:hover {
+  background-color: var(--main-beige);
+}
+
+.btn-danger:hover,
+delete-btn:hover {
+  background-color: var(--main-amber);
+}
+
+/* =========================
+   ダッシュボード
+   ========================= */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 4px;
+}
+
+.dashboard-section {
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-section h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  color: var(--main-dark-green);
+  border-left: 4px solid var(--main-amber);
+  padding-left: 8px;
+}
+
+/* --- サマリーカード --- */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.summary-card {
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-label {
+  font-size: 0.8rem;
+  color: var(--main-gray);
+  margin-bottom: 4px;
+}
+
+.card-value {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--main-dark-green);
+}
+
+/* サマリーの状態別カラー */
+.summary-card.alert-red {
+  border-color: var(--main-amber);
+  background-color: #fdf7f0;
+}
+.summary-card.alert-red .card-value {
+  color: var(--main-amber);
+}
+
+.summary-card.alert-yellow {
+  border-color: var(--main-amber);
+  background-color: #fcf6e8;
+}
+.summary-card.alert-yellow .card-value {
+  color: var(--main-dark-green);
+}
+
+.summary-card.in-cart {
+  border-color: var(--main-green);
+  background-color: #f1f4eb;
+}
+.summary-card.in-cart .card-value {
+  color: var(--main-dark-green);
+}
+
+/* --- アラートリスト --- */
+.no-alerts {
+  color: var(--main-dark-green);
+  font-size: 0.9rem;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.alert-item-name {
+  font-weight: bold;
+  color: var(--main-gray);
+}
+
+.alert-item-status.empty {
+  color: #a85b3d;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+.alert-item-status.low {
+  color: var(--main-amber);
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.btn-quick-add {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  width: auto;
+}
+
+/* --- 登録フォーム --- */
+.add-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--main-gray);
+}
+
+.form-group label .required {
+  color: var(--main-amber);
+}
+
+.form-group input {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+.form-group input:focus {
+  border-color: var(--main-dark-green);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(168, 187, 163, 0.2);
+}
+
+.btn-submit {
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* =========================
+   買い物リスト（Shopping）
+   ========================= */
+.app-shopping-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.shopping-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.shopping-header-row h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--main-dark-green);
+  border-left: 4px solid var(--main-green);
+  padding-left: 8px;
+}
+
+/* 一括購入ボタンの微調整 */
+.btn-buy-all {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 空状態（Empty State）のパネルデザイン */
+.empty-shopping {
+  background-color: var(--main-beige);
+  padding: 40px 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.empty-shopping .empty-sub {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--main-amber);
+}
+
+/* カテゴリグループ */
+.category-group {
+  margin-bottom: 20px;
+}
+
+.category-group-title {
+  font-size: 0.9rem;
+  color: var(--main-gray);
+  margin: 0 0 8px 4px;
+  font-weight: bold;
+}
+
+/* アイテム名と在庫数の縦並びゾーン */
+.item-info-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shopping-current-stock {
+  font-size: 0.75rem;
+  color: var(--main-amber);
+}
+
+/* 個別購入ボタンの微調整 */
+.btn-buy-single {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* =========================
+   在庫一覧（Inventory）
+   ========================= */
+.inventory-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.inventory-header .item-name {
+  font-weight: bold;
+}
+
+/* 文字だけの削除ボタン */
+.btn-delete-text {
+  background: none;
+  border: none;
+  color: var(--main-amber);
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 0;
+}
+.btn-delete-text:hover {
+  color: var(--main-dark-green);
+}
+
+/* 下段の数量コントロールエリア */
+.inventory-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border-top: 1px dashed #e1e6de;
+  padding-top: 8px;
+}
+
+.inventory-label {
+  font-size: 14px;
+  color: var(--main-gray);
+}
+
+.inventory-quantity-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inventory-stock-count {
+  font-size: 16px;
+  font-weight: bold;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* 増減ボタンの共通スタイル */
+.btn-quantity {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* マイナスボタン */
+.btn-quantity.minus {
+  border: 1px solid var(--main-green);
+  background-color: #fff;
+  color: var(--main-green);
+}
+.btn-quantity.minus:hover:not(:disabled) {
+  background-color: #f3f6ee;
+}
+/* マイナスボタンが無効（在庫0）の時 */
+.btn-quantity.minus:disabled {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+/* プラスボタン */
+.btn-quantity.plus {
+  border: none;
+  background-color: var(--main-green);
+  color: var(--main-beige, #fff);
+}
+.btn-quantity.plus:hover {
+  background-color: #218838;
 }
