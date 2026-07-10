@@ -157,7 +157,7 @@ function App() {
     return '#28a745';
   };
 
-  // ★ 在庫一覧から直接個数を増減させる関数
+  // 在庫一覧から直接個数を増減させる関数
   const updateStockCount = async (id, currentStock, change) => {
     const newStock = currentStock + change;
     if (newStock < 0) return; // 在庫数がマイナスにならないようにガード
@@ -173,6 +173,31 @@ function App() {
       console.error("在庫数の更新に失敗しました:", error);
       setErrorMessage('在庫数の更新に失敗しました。');
     }
+  };
+  // 消費予測日数を計算してメッセージを返す関数
+  const getPredictionMessage = (lastPurchasedAt, avgCycleDays) => {
+    // データがまだ学習されていない（NULLの）場合は何も表示しない
+    if (!lastPurchasedAt || !avgCycleDays) return null;
+
+    const lastDate = new Date(lastPurchasedAt);
+    const today = new Date();
+    
+    // 経過日数を計算（ミリ秒を日数に変換）
+    const diffTime = today.getTime() - lastDate.getTime();
+    const passedDays = Math.floor(diffTime / (1000 * 3600 * 24));
+    
+    // 残り日数を計算
+    const remainingDays = avgCycleDays - passedDays;
+
+    // 状況に合わせてメッセージを出し分ける
+    if (remainingDays <= 0) {
+      return "予測: そろそろ切れそうです";
+    } else if (remainingDays <= 3) {
+      return `予測: あと ${remainingDays} 日`;
+    }
+    
+    // 4日以上余裕がある場合はバッジを隠す（UIをスッキリさせるため）
+    return null; 
   };
 
   //画面表示
@@ -226,6 +251,7 @@ function App() {
                 getStockColor={getStockColor} 
                 removeItem={confirmDelete}
                 updateStockCount={updateStockCount}
+                getPredictionMessage={getPredictionMessage}
               />
             )}
 

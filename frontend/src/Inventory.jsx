@@ -1,6 +1,7 @@
 import React from 'react';
 
-function Inventory({ items, getStockColor, removeItem, updateStockCount }) {
+// 1️⃣ 引数（Props）に getPredictionMessage を追加
+function Inventory({ items, getStockColor, removeItem, updateStockCount, getPredictionMessage }) {
   return (
     <div className="stock-container">
       <h2>在庫一覧</h2>
@@ -10,7 +11,18 @@ function Inventory({ items, getStockColor, removeItem, updateStockCount }) {
             
             {/* 上段：アイテム名と削除ボタン */}
             <div className="inventory-header">
-              <span className="item-name">{item.general_name}</span>
+              <div className="item-name-group"> {/* 👈 アイテム名とバッジを縦に並べるための枠 */}
+                <span className="item-name">{item.general_name}</span>
+                
+                {/* 2️⃣ 🌟 ここに予測バッジを表示するコードを追加 */}
+                {/* App.jsxから関数が渡されていて、かつメッセージがある時だけ表示する */}
+                {getPredictionMessage && getPredictionMessage(item.last_purchased_at, item.avg_cycle_days) && (
+                  <span className="prediction-badge">
+                    {getPredictionMessage(item.last_purchased_at, item.avg_cycle_days)}
+                  </span>
+                )}
+              </div>
+
               <button 
                 className="btn-delete-text" 
                 onClick={() => removeItem(item.id)}
@@ -19,7 +31,7 @@ function Inventory({ items, getStockColor, removeItem, updateStockCount }) {
               </button>
             </div>
 
-            {/* 下段：数量管理コントロール */}
+            {/* 下段：数量管理コントロール（変更なし） */}
             <div className="inventory-controls">
               <span className="inventory-label">在庫数</span>
               

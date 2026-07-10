@@ -764,3 +764,24 @@ delete-btn:hover {
 .btn-quantity.plus:hover {
   background-color: #218838;
 }
+
+/* 予測バッジのスタイル */
+.prediction-badge {
+  display: inline-block;
+  background-color: #d4a373; /* テラコッタ/くすみオレンジ系のアクセントカラー */
+  color: #ffffff;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin-top: 4px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  letter-spacing: 0.05em;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ふわっと表示させるアニメーション */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
