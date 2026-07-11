@@ -96,59 +96,73 @@ def create_item(item: ItemCreate, db: Session = Depends(get_db)):
 
 # 🌟 自動学習アルゴリズム搭載のアイテム更新API
 @app.put("/api/items/{item_id}", response_model=ItemResponse)
-def update_item(item_id: int, item_data: ItemUpdate, db: Session = Depends(get_db)):
+def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
     db_item = db.query(Item).filter(Item.id == item_id).first()
-    if db_item is None:
+    if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
-    
-    # 🌟 変更前の状態を記憶しておく
-    was_in_cart = db_item.is_in_cart
 
-    # データの更新処理
-    update_data = item_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_item, key, value)
-        
-    # 🌟 ここから「消費サイクル自動学習」のアルゴリズム
     today = date.today()
+    
+    # 状態の変化を検知するための変数を準備
+    stock_decreased = False
+    stock_increased = False
 
-    # パターン1：購入した時（カートから外れた時）
-    if was_in_cart == True and db_item.is_in_cart == False:
-        db_item.last_purchased_at = today 
-        new_log = Consumptionlog(item_id=item_id, purchased_at=today)
-        db.add(new_log)
+    # 在庫数（stock_count）の増減をチェック
+    if item.stock_count is not None:
+        if item.stock_count < db_item.stock_count:
+            stock_decreased = True
+        elif item.stock_count > db_item.stock_count:
+            stock_increased = True
+            
+    # カート状態の変化をチェック
+    bought_from_cart = (db_item.is_in_cart == True and item.is_in_cart == False)
+    put_into_cart = (db_item.is_in_cart == False and item.is_in_cart == True)
 
-    # パターン2：枯渇した時（カートに入った時）
-    elif was_in_cart == False and db_item.is_in_cart == True:
-        active_log = db.query(Consumptionlog).filter(
-            Consumptionlog.item_id == item_id,
-            Consumptionlog.depletes_at.is_(None)
-        ).order_by(Consumptionlog.id.desc()).first()
+    # 🎯 1. 購入・補充した時の処理（まとめ買い含む）
+    # 新しいサイクルの始まりとして、1個目の使用開始日を「今日」にセット
+    if stock_increased or bought_from_cart:
+        db_item.last_purchased_at = today
 
-        if active_log:
-            active_log.depletes_at = today
-            db.flush() 
-
-            completed_logs = db.query(Consumptionlog).filter(
-                Consumptionlog.item_id == item_id,
-                Consumptionlog.depletes_at.isnot(None)
-            ).all()
-
-            total_days = 0
-            valid_count = 0
-
-            for log in completed_logs:
-                days = (log.depletes_at - log.purchased_at).days
-                # 🌟 テスト用に、同日中に買っても「1日」として計算されるように調整
-                if days == 0:
-                    days = 1
+    # 🎯 2. 「1個消費」した時の処理（マイナスボタンを押した、または枯渇してカートに入れた）
+    if stock_decreased or put_into_cart:
+        if db_item.last_purchased_at:
+            days = (today - db_item.last_purchased_at).days
+            
+            # 【ルール1】同日中の操作（0日以下）はイレギュラーとして無視
+            if days > 0:
+                # ログに「1個分の消費日数」を記録する
+                new_log = Consumptionlog(
+                    item_id=item_id,
+                    purchased_at=db_item.last_purchased_at,
+                    depletes_at=today
+                )
+                db.add(new_log)
+                db.flush() # ログを一時的に反映
                 
-                if days > 0:  
-                    total_days += days
-                    valid_count += 1
+                # 有効なログを取得して平均を計算
+                completed_logs = db.query(Consumptionlog).filter(
+                    Consumptionlog.item_id == item_id,
+                    Consumptionlog.depletes_at != None
+                ).all()
+                
+                total_days = sum((log.depletes_at - log.purchased_at).days for log in completed_logs)
+                valid_count = len(completed_logs)
+                
+                # 【ルール2】サンプル数が2件以上の場合のみ予測（平均日数）を更新
+                if valid_count >= 2:
+                    db_item.avg_cycle_days = round(total_days / valid_count, 1)
 
-            if valid_count > 0:
-                db_item.avg_cycle_days = total_days // valid_count
+            # 🎯 3. 次の計測のためのリセット処理
+            if put_into_cart:
+                # 完全にストックがゼロになった場合は計測ストップ
+                db_item.last_purchased_at = None
+            else:
+                # まだストックがある場合（マイナスボタン）は、ここから「次の1個」を使い始めるので「今日」をセット
+                db_item.last_purchased_at = today
+
+    # クライアントから送られてきた値で db_item を上書き更新
+    for key, value in item.dict(exclude_unset=True).items():
+        setattr(db_item, key, value)
 
     db.commit()
     db.refresh(db_item)
