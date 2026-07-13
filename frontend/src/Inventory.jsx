@@ -1,68 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-// 1️⃣ 引数（Props）に getPredictionMessage を追加
-function Inventory({ items, getStockColor, removeItem, updateStockCount, getPredictionMessage }) {
+function Inventory({ items, getStockColor, removeItem, updateStockCount, getPredictionMessage, saveItemEdit }) {
+  // 編集モード用の状態（ここで定義します）
+  const [editingItem, setEditingItem] = useState(null);
+
+  // 1️⃣ 枯渇が近い順にソートする処理
+  const sortedItems = [...items].sort((a, b) => {
+    const getDays = (item) => {
+      if (!item.last_purchased_at || !item.avg_cycle_days) return 999;
+      const depletionDate = new Date(item.last_purchased_at);
+      depletionDate.setDate(depletionDate.getDate() + item.avg_cycle_days);
+      return (depletionDate - new Date()) / (1000 * 60 * 60 * 24);
+    };
+    return getDays(a) - getDays(b);
+  });
+
   return (
     <div className="stock-container">
       <h2>在庫一覧</h2>
       <div className="item-list">
-        {items.map(item => (
+        {sortedItems.map(item => (
           <div key={item.id} className="item-card inventory-card">
             
-            {/* 上段：アイテム名と削除ボタン */}
-            <div className="inventory-header">
-              <div className="item-name-group"> {/* 👈 アイテム名とバッジを縦に並べるための枠 */}
-                <span className="item-name">{item.general_name}</span>
-                
-                {/* 2️⃣ 🌟 ここに予測バッジを表示するコードを追加 */}
-                {/* App.jsxから関数が渡されていて、かつメッセージがある時だけ表示する */}
-                {getPredictionMessage && getPredictionMessage(item.last_purchased_at, item.avg_cycle_days) && (
-                  <span className="prediction-badge">
-                    {getPredictionMessage(item.last_purchased_at, item.avg_cycle_days)}
-                  </span>
-                )}
+            {/* 編集モードか通常表示かの切り替え */}
+            {editingItem?.id === item.id ? (
+              <div className="edit-mode">
+                <input 
+                  value={editingItem.general_name} 
+                  onChange={(e) => setEditingItem({...editingItem, general_name: e.target.value})}
+                />
+                <input 
+                  value={editingItem.category} 
+                  onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+                />
+                <button onClick={() => { saveItemEdit(item.id, editingItem); setEditingItem(null); }}>保存</button>
+                <button onClick={() => setEditingItem(null)}>キャンセル</button>
               </div>
+            ) : (
+              <div className="inventory-header">
+                <div className="item-name-group">
+                  <span className="item-name">{item.general_name}</span>
+                  <button onClick={() => setEditingItem(item)}>🖋️</button>
+                  
+                  {getPredictionMessage && getPredictionMessage(item.last_purchased_at, item.avg_cycle_days) && (
+                    <span className="prediction-badge">
+                      {getPredictionMessage(item.last_purchased_at, item.avg_cycle_days)}
+                    </span>
+                  )}
+                </div>
 
-              <button 
-                className="btn-delete-text" 
-                onClick={() => removeItem(item.id)}
-              >
-                削除
-              </button>
-            </div>
+                <button className="btn-delete-text" onClick={() => removeItem(item.id)}>削除</button>
+              </div>
+            )}
 
-            {/* 下段：数量管理コントロール（変更なし） */}
+            {/* 在庫管理UI */}
             <div className="inventory-controls">
               <span className="inventory-label">在庫数</span>
-              
               <div className="inventory-quantity-wrapper">
-                {/* マイナスボタン */}
-                <button 
-                  className="btn-quantity minus"
-                  onClick={() => updateStockCount(item.id, item.stock_count, -1)}
-                  disabled={item.stock_count <= 0}
-                >
-                  -
-                </button>
-
-                {/* 現在の個数（★色だけは動的なのでインラインスタイルで残します） */}
-                <span 
-                  className="inventory-stock-count" 
-                  style={{ color: getStockColor(item.stock_count) }}
-                >
+                <button className="btn-quantity minus" onClick={() => updateStockCount(item.id, item.stock_count, -1)} disabled={item.stock_count <= 0}>-</button>
+                <span className="inventory-stock-count" style={{ color: getStockColor(item.stock_count) }}>
                   {item.stock_count} コ
                 </span>
-
-                {/* プラスボタン */}
-                <button 
-                  className="btn-quantity plus"
-                  onClick={() => updateStockCount(item.id, item.stock_count, 1)}
-                >
-                  +
-                </button>
+                <button className="btn-quantity plus" onClick={() => updateStockCount(item.id, item.stock_count, 1)}>+</button>
               </div>
             </div>
-
           </div>
         ))}
       </div>

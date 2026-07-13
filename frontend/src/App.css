@@ -792,3 +792,34 @@ delete-btn:hover {
   align-items: flex-start;
   gap: 2px;
 }
+
+/* 通知設定セクション */
+.settings-section {
+  margin-top: 30px;
+}
+
+.settings-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border: 1px solid var(--main-green);
+}
+
+.settings-card input[type="time"],
+.settings-card select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-top: 5px;
+  background-color: #f9f9f9;
+}
+
+.settings-hint {
+  font-size: 12px;
+  color: var(--main-gray);
+  margin-top: 15px;
+  text-align: center;
+}

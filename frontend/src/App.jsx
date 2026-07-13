@@ -7,8 +7,8 @@ import Shopping from './Shopping';
 import Inventory from './Inventory';
 
 // 作成したAPI通信用の関数を読み込む
-import { getItems, createItem, updateItem, deleteItem } from './api/items';
-
+import { getItems, createItem, updateItem, deleteItem, getSettings, updateSettings } from './api/items';
+ 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [items, setItems] = useState([]); // 実データはAPIから取得する（初期値は空配列）
@@ -18,6 +18,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true); // 初回データ取得中かどうか
   const [errorMessage, setErrorMessage] = useState(''); // API失敗時にユーザーへ表示するメッセージ
   const [deleteTargetId, setDeleteTargetId] = useState(null);// 削除対象のIDがnullならポップアップ非表示
+  const [editingItem, setEditingItem] = useState(null); // 編集対象のアイテムを保存する箱
 
   // アプリ起動時に、自動でバックエンドからデータを取得する処理
   useEffect(() => {
@@ -200,6 +201,52 @@ function App() {
     return null; 
   };
 
+  const [settings, setSettings] = useState(null);
+
+  // useEffect内の fetchItems 関数を以下のように書き換える
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // アイテムと設定を同時に取得
+        const [itemsData, settingsData] = await Promise.all([
+          getItems(),
+          getSettings()
+        ]);
+        setItems(itemsData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error("データの取得に失敗しました:", error);
+        setErrorMessage('データの取得に失敗しました。バックエンドが起動しているか確認してください。');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- 設定更新用関数を追加 ---
+  const handleUpdateSettings = async (newSettings) => {
+    try {
+      const updated = await updateSettings(newSettings);
+      setSettings(updated);
+      alert("設定を保存しました！"); // 簡易的な通知
+    } catch (error) {
+      console.error("設定の保存に失敗しました:", error);
+      alert("設定の保存に失敗しました");
+    }
+  };
+
+  // updateItem を使って編集内容を保存する関数を追加
+  const saveItemEdit = async (id, updatedData) => {
+    try {
+      const updated = await updateItem(id, updatedData);
+      setItems(items.map(item => item.id === id ? updated : item));
+      setEditingItem(null); // 編集モード終了
+    } catch (error) {
+      console.error("更新に失敗しました:", error);
+    }
+  };
+
   //画面表示
   return (
     <div className="app-container">
@@ -225,13 +272,15 @@ function App() {
               <Dashboard 
                 items={items} 
                 newItemName={newItemName} 
-                setNewItemName={setNewItemName} 
+                setNewItemName={setNewItemName}
                 newItemCategory={newItemCategory}
                 setNewItemCategory={setNewItemCategory}
                 newItemStock={newItemStock}
                 setNewItemStock={setNewItemStock}
-                addNewItem={addNewItem} 
-                addToCart={addToCart} 
+                addNewItem={addNewItem}
+                addToCart={addToCart}
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
               />
             )}
 
@@ -252,6 +301,7 @@ function App() {
                 removeItem={confirmDelete}
                 updateStockCount={updateStockCount}
                 getPredictionMessage={getPredictionMessage}
+                saveItemEdit={saveItemEdit}
               />
             )}
 

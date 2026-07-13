@@ -23,3 +23,17 @@ export const deleteItem = async (id) => {
   const response = await apiClient.delete(`/api/items/${id}`);
   return response.data;
 };
+
+// --- システム設定用API ---
+
+// 設定の取得
+export const getSettings = async () => {
+  const response = await apiClient.get('/settings');
+  return response.data;
+};
+
+// 設定の更新
+export const updateSettings = async (settingsData) => {
+  const response = await apiClient.put('/settings', settingsData);
+  return response.data;
+};

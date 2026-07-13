@@ -9,7 +9,9 @@ function Dashboard({
   newItemStock,
   setNewItemStock,
   addNewItem,
-  addToCart
+  addToCart,
+  settings,
+  onUpdateSettings
 }) {
   // カテゴリのリスト作成
   const defaultCategories = ['食品', '日用品', '消耗品', '掃除用品', 'その他'];
@@ -139,6 +141,33 @@ function Dashboard({
         </form>
       </section>
 
+      {/* 通知設定パネル */}
+      {settings && (
+        <section className="dashboard-section settings-section">
+          <h2>Discord通知設定</h2>
+          <div className="settings-card">
+            <div className="form-group">
+              <label>通知時刻</label>
+              <input 
+                type="time" 
+                value={settings.notify_time}
+                onChange={(e) => onUpdateSettings({ ...settings, notify_time: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>通知頻度</label>
+              <select 
+                value={settings.notify_frequency}
+                onChange={(e) => onUpdateSettings({ ...settings, notify_frequency: e.target.value })}
+              >
+                <option value="always">毎日通知する（補充されるまで）</option>
+                <option value="first_day">初日のみ通知（1回だけ）</option>
+              </select>
+            </div>
+            <p className="settings-hint">※予測日数が3日以下になったアイテムをDiscordに通知します</p>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

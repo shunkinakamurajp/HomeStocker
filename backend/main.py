@@ -5,6 +5,11 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import date
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import requests
+import zoneinfo
+from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # --- 1. データベース設計 (SQLAlchemy) ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./homestocker.db"
@@ -32,6 +37,13 @@ class Consumptionlog(Base):
     item_id = Column(Integer, ForeignKey("items.id"))
     purchased_at = Column(Date)
     depletes_at = Column(Date, nullable=True)
+
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    notify_time = Column(String, default="07:00")
+    notify_frequency = Column(String, default="always")
 
 # データベースのテーブルを作成
 Base.metadata.create_all(bind=engine)
@@ -64,6 +76,15 @@ class ItemResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class SystemSettingsBase(BaseModel):
+    notify_time: str
+    notify_frequency: str
+
+class SystemSettingsResponse(SystemSettingsBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True) # Pydantic v2 用
+
 # --- 3. FastAPIアプリケーション本体 ---
 app = FastAPI()
 
@@ -82,9 +103,116 @@ def get_db():
     finally:
         db.close()
 
+# --- 🌟 STEP 6: Discord通知バッチ処理ロジック ---
+
+def JST_now():
+    """自宅サーバー内で確実に日本時間(JST)を基準にするためのヘルパー"""
+    return datetime.now(zoneinfo.ZoneInfo("Asia/Tokyo"))
+
+def batch_check_and_notify():
+    """毎分実行され、設定時刻になったら在庫をスキャンしてDiscordへ通知する"""
+    db: Session = SessionLocal()
+    try:
+        # 1. DBから現在の通知設定を取得
+        settings = db.query(SystemSettings).first()
+        if not settings:
+            return  # 設定テーブルが空の場合は何もしない
+
+        # 現在のJST時刻を "HH:MM" 形式の文字列にする (例: "07:00")
+        now_str = JST_now().strftime("%H:%M")
+
+        # 画面から設定された通知時刻と一致しなければ、この分は処理をスキップ
+        if now_str != settings.notify_time:
+            return
+
+        # 2. 通知対象アイテムの抽出 (残り予測日数が3日以下のもの)
+        alert_items = []
+        today_jst = JST_now().date()
+        
+        # カートに入っておらず、ストックが1個以上あるアイテムを全スキャン
+        items = db.query(Item).filter(Item.is_in_cart == False, Item.stock_count > 0).all()
+
+        for item in items:
+            if item.last_purchased_at and item.avg_cycle_days and item.avg_cycle_days > 0:
+                # 枯渇予測日 = 前回購入日 + 平均消費日数
+                estimated_depletion = item.last_purchased_at + timedelta(days=item.avg_cycle_days)
+                # 残り日数計算
+                remaining_days = (estimated_depletion - today_jst).days
+
+                # 閾値（3日以下）のチェック
+                if remaining_days <= 3:
+                    alert_items.append((item, remaining_days))
+
+        # 3. Discord Webhookへの送信処理
+        if alert_items:
+            # 直接ここにURLを書いても、環境変数 DISCORD_WEBHOOK_URL から読み込んでも動く設計
+            webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "ここにマスターが発行したDiscordのWebhookURLを貼り付けてください")
+            
+            if not webhook_url or "DiscordのWebhookURL" in webhook_url:
+                print("【警告】Discord Webhook URLが正しく設定されていないため、通知をスキップしました。")
+                return
+
+            # メッセージ文面の構築（温かみのあるアースカラー通知）
+            content = "📢 **【HomeStocker】ストック切れ間近アラート**\n"
+            content += f"朝の定期ストックチェックです。以下のアイテムの消費予測が近づいています！\n"
+            content += "========================================\n\n"
+            
+            for item, days in alert_items:
+                if days == 0:
+                    time_msg = "🚨 本日枯渇する予測です！"
+                elif days < 0:
+                    time_msg = f"⚠️ 予測日を {abs(days)} 日超過しています"
+                else:
+                    time_msg = f"⏳ あと {days} 日で枯渇予測"
+                
+                # 特定の商品名(specific_name)や店舗タグ(store_tag)があればそれも親切に表示
+                store_info = f"（購入先: {item.store_tag}）" if item.store_tag else ""
+                content += f"・**{item.general_name}** {store_info}\n"
+                content += f"  ┗ 在庫: {item.stock_count}個  [{time_msg}]\n"
+            
+            content += "\n========================================\n"
+            content += "買い出しの際は、買うものリスト（カート）への追加をお忘れなく！🛒✨"
+
+            # DiscordへPOST送信
+            payload = {"content": content}
+            response = requests.post(webhook_url, json=payload)
+            if response.status_code == 204:
+                print(f"[{JST_now()}] Discordへの通知バッチが正常に完了しました。")
+            else:
+                print(f"[{JST_now()}] Discord通知に失敗しました。ステータスコード: {response.status_code}")
+
+    except Exception as e:
+        print(f"【エラー】通知バッチ処理中に予期せぬ問題が発生しました: {e}")
+    finally:
+        db.close()
+
 @app.get("/api/items", response_model=list[ItemResponse])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(Item).offset(skip).limit(limit).all()
+
+# --- システム設定 API ---
+@app.get("/settings", response_model=SystemSettingsResponse)
+def get_settings(db: Session = Depends(get_db)):
+    settings = db.query(SystemSettings).first()
+    if not settings:
+        settings = SystemSettings(id=1, notify_time="07:00", notify_frequency="always")
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    return settings
+
+@app.put("/settings", response_model=SystemSettingsResponse)
+def update_settings(settings_update: SystemSettingsBase, db: Session = Depends(get_db)):
+    settings = db.query(SystemSettings).first()
+    if not settings:
+        settings = SystemSettings(id=1)
+        db.add(settings)
+    
+    settings.notify_time = settings_update.notify_time
+    settings.notify_frequency = settings_update.notify_frequency
+    db.commit()
+    db.refresh(settings)
+    return settings
 
 @app.post("/api/items", response_model=ItemResponse)
 def create_item(item: ItemCreate, db: Session = Depends(get_db)):
@@ -113,6 +241,11 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
             stock_decreased = True
         elif item.stock_count > db_item.stock_count:
             stock_increased = True
+
+    # === レアケース（同時操作）の排他制御 ===
+    # 在庫増加とカート投入（枯渇）が同時に行われた場合は、カート投入をキャンセル
+    if stock_increased and put_into_cart:
+        put_into_cart = False
             
     # カート状態の変化をチェック
     bought_from_cart = (db_item.is_in_cart == True and item.is_in_cart == False)
@@ -176,3 +309,18 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
     db.delete(db_item)
     db.commit()
     return {"message": "Item deleted successfully"}
+
+# バックグラウンドスケジューラーの初期化
+scheduler = BackgroundScheduler()
+# 毎分 00秒 にチェックを走らせる設定
+scheduler.add_job(batch_check_and_notify, 'cron', minute='*', second='00')
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler.start()
+    print("🚀 [HomeStocker] バックグラウンド通知スケジューラーが常駐を開始しました。")
+
+@app.on_event("shutdown")
+def shutdown_scheduler():
+    scheduler.shutdown()
+    print("🔒 [HomeStocker] バックグラウンド通知スケジューラーを停止しました。")
