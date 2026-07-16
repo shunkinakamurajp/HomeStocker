@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 
-function Inventory({ items, getStockColor, removeItem, updateStockCount, getPredictionMessage, saveItemEdit }) {
+function Inventory({ items, getStockColor, removeItem, updateStockCount, getPredictionMessage, saveItemEdit, calculateRemainingDays }) {
   // 編集モード用の状態（ここで定義します）
   const [editingItem, setEditingItem] = useState(null);
 
   // 1️⃣ 枯渇が近い順にソートする処理
   const sortedItems = [...items].sort((a, b) => {
-    const getDays = (item) => {
-      if (!item.last_purchased_at || !item.avg_cycle_days) return 999;
-      const depletionDate = new Date(item.last_purchased_at);
-      depletionDate.setDate(depletionDate.getDate() + item.avg_cycle_days);
-      return (depletionDate - new Date()) / (1000 * 60 * 60 * 24);
-    };
-    return getDays(a) - getDays(b);
+    const daysA = calculateRemainingDays(a.last_purchased_at, a.avg_cycle_days) ?? 999;
+    const daysB = calculateRemainingDays(b.last_purchased_at, b.avg_cycle_days) ?? 999;
+    return daysA - daysB;
   });
 
   return (
@@ -33,7 +29,13 @@ function Inventory({ items, getStockColor, removeItem, updateStockCount, getPred
                   value={editingItem.category} 
                   onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
                 />
-                <button onClick={() => { saveItemEdit(item.id, editingItem); setEditingItem(null); }}>保存</button>
+                {/* 🌟 成功した時(successがtrue)だけ編集モードを終了(null)するように変更 */}
+                <button onClick={async () => {
+                  const success = await saveItemEdit(item.id, editingItem);
+                  if (success) {
+                    setEditingItem(null);
+                  }
+                }}>保存</button>
                 <button onClick={() => setEditingItem(null)}>キャンセル</button>
               </div>
             ) : (

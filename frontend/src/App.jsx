@@ -28,9 +28,7 @@ function App() {
         setItems(data); // 取得した本物のデータをStateにセット
       } catch (error) {
         console.error("データの取得に失敗しました:", error);
-        setErrorMessage('データの取得に失敗しました。バックエンドが起動しているか確認してください。');
-      } finally {
-        setIsLoading(false);
+        setErrorMessage("データの取得に失敗しました。サーバーを確認してください。");
       }
     };
     fetchItems();
@@ -175,30 +173,24 @@ function App() {
       setErrorMessage('在庫数の更新に失敗しました。');
     }
   };
-  // 消費予測日数を計算してメッセージを返す関数
-  const getPredictionMessage = (lastPurchasedAt, avgCycleDays) => {
-    // データがまだ学習されていない（NULLの）場合は何も表示しない
+ // 🌟 新設：残り日数を計算する共通関数
+  const calculateRemainingDays = (lastPurchasedAt, avgCycleDays) => {
     if (!lastPurchasedAt || !avgCycleDays) return null;
-
-    const lastDate = new Date(lastPurchasedAt);
+    const depletionDate = new Date(lastPurchasedAt);
+    depletionDate.setDate(depletionDate.getDate() + avgCycleDays);
     const today = new Date();
-    
-    // 経過日数を計算（ミリ秒を日数に変換）
-    const diffTime = today.getTime() - lastDate.getTime();
-    const passedDays = Math.floor(diffTime / (1000 * 3600 * 24));
-    
-    // 残り日数を計算
-    const remainingDays = avgCycleDays - passedDays;
+    // 差分をミリ秒から日数に変換して切り捨て（整数）
+    return Math.floor((depletionDate - today) / (1000 * 60 * 60 * 24));
+  };
 
-    // 状況に合わせてメッセージを出し分ける
-    if (remainingDays <= 0) {
-      return "予測: そろそろ切れそうです";
-    } else if (remainingDays <= 3) {
-      return `予測: あと ${remainingDays} 日`;
-    }
-    
-    // 4日以上余裕がある場合はバッジを隠す（UIをスッキリさせるため）
-    return null; 
+  // 予測メッセージを生成する関数（上の共通関数を使うようにスッキリ修正）
+  const getPredictionMessage = (lastPurchasedAt, avgCycleDays) => {
+    const remainingDays = calculateRemainingDays(lastPurchasedAt, avgCycleDays);
+    if (remainingDays === null) return null;
+
+    if (remainingDays <= 0) return "⚠️ 予測: そろそろ切れそうです";
+    if (remainingDays <= 3) return `⏳ 予測: あと ${remainingDays} 日`;
+    return null;
   };
 
   const [settings, setSettings] = useState(null);
@@ -224,15 +216,16 @@ function App() {
     fetchData();
   }, []);
 
-  // --- 設定更新用関数を追加 ---
-  const handleUpdateSettings = async (newSettings) => {
+ // アイテムの編集を保存する処理
+  const saveItemEdit = async (id, updatedData) => {
     try {
-      const updated = await updateSettings(newSettings);
-      setSettings(updated);
-      alert("設定を保存しました！"); // 簡易的な通知
+      const updatedItem = await updateItem(id, updatedData);
+      setItems(items.map(item => item.id === id ? updatedItem : item));
+      return true; // 🌟 追加：成功したことを Inventory.jsx に教える
     } catch (error) {
-      console.error("設定の保存に失敗しました:", error);
-      alert("設定の保存に失敗しました");
+      console.error("更新エラー:", error);
+      setErrorMessage("アイテムの更新に失敗しました。"); // 🌟 追加：エラーメッセージを画面に出す
+      return false; // 🌟 追加：失敗したことを教える
     }
   };
 
@@ -302,6 +295,7 @@ function App() {
                 updateStockCount={updateStockCount}
                 getPredictionMessage={getPredictionMessage}
                 saveItemEdit={saveItemEdit}
+                calculateRemainingDays={calculateRemainingDays}
               />
             )}
 

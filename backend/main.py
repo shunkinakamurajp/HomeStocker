@@ -26,10 +26,9 @@ class Item(Base):
     store_tag = Column(String, nullable=True)
     stock_count = Column(Integer, default=0)
     is_in_cart = Column(Boolean, default=False)
-    
-    # 🌟 学習用データの箱
     last_purchased_at = Column(Date, nullable=True)
     avg_cycle_days = Column(Integer, nullable=True)
+    is_notified = Column(Boolean, default=False)
 
 class Consumptionlog(Base):
     __tablename__ = "consumption_logs"
@@ -139,9 +138,13 @@ def batch_check_and_notify():
                 # 残り日数計算
                 remaining_days = (estimated_depletion - today_jst).days
 
-                # 閾値（3日以下）のチェック
-                if remaining_days <= 3:
-                    alert_items.append((item, remaining_days))
+                # 残り3日以下が通知対象
+            if remaining_days <= 3:
+                # 設定が「初日のみ（first_day）」かつ「既に通知済み」ならリストに入れない
+                if settings.notify_frequency == "first_day" and item.is_notified:
+                    continue
+                
+                alert_items.append(item)
 
         # 3. Discord Webhookへの送信処理
         if alert_items:
@@ -181,6 +184,11 @@ def batch_check_and_notify():
             else:
                 print(f"[{JST_now()}] Discord通知に失敗しました。ステータスコード: {response.status_code}")
 
+            # Discordへ送信した後、通知したアイテムのフラグを「通知済み(True)」に変更して保存します
+            for item in alert_items:
+                item.is_notified = True
+            db.commit()
+            
     except Exception as e:
         print(f"【エラー】通知バッチ処理中に予期せぬ問題が発生しました: {e}")
     finally:
@@ -242,14 +250,14 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
         elif item.stock_count > db_item.stock_count:
             stock_increased = True
 
-    # === レアケース（同時操作）の排他制御 ===
-    # 在庫増加とカート投入（枯渇）が同時に行われた場合は、カート投入をキャンセル
-    if stock_increased and put_into_cart:
-        put_into_cart = False
-            
-    # カート状態の変化をチェック
+    # カート状態の変化を先にチェック（変数の定義）
     bought_from_cart = (db_item.is_in_cart == True and item.is_in_cart == False)
     put_into_cart = (db_item.is_in_cart == False and item.is_in_cart == True)
+
+    # === レアケース（同時操作）の排他制御 ===
+    # 定義した変数を使って判定。在庫増加とカート投入が同時に行われた場合はカート投入をキャンセル
+    if stock_increased and put_into_cart:
+        put_into_cart = False
 
     # 🎯 1. 購入・補充した時の処理（まとめ買い含む）
     # 新しいサイクルの始まりとして、1個目の使用開始日を「今日」にセット
@@ -283,7 +291,8 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
                 
                 # 【ルール2】サンプル数が2件以上の場合のみ予測（平均日数）を更新
                 if valid_count >= 2:
-                    db_item.avg_cycle_days = round(total_days / valid_count, 1)
+                    # round(..., 1) の「, 1」を消して、きれいな整数にします
+                    db_item.avg_cycle_days = round(total_days / valid_count)
 
             # 🎯 3. 次の計測のためのリセット処理
             if put_into_cart:
@@ -294,7 +303,8 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
                 db_item.last_purchased_at = today
 
     # クライアントから送られてきた値で db_item を上書き更新
-    for key, value in item.dict(exclude_unset=True).items():
+    # .dict() を .model_dump() に変更します
+    for key, value in item.model_dump(exclude_unset=True).items():
         setattr(db_item, key, value)
 
     db.commit()

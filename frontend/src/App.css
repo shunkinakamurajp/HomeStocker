@@ -400,7 +400,7 @@
 }
 
 .btn-danger,
-delete-btn {
+.delete-btn {
   padding: 10px 16px;
   border: none;
   background-color: var(--main-amber);
@@ -415,7 +415,7 @@ delete-btn {
 }
 
 .btn-danger:hover,
-delete-btn:hover {
+.delete-btn:hover {
   background-color: var(--main-amber);
 }
 
