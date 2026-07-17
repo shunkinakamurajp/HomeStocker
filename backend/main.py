@@ -254,6 +254,9 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
     if stock_increased and put_into_cart:
         put_into_cart = False
 
+    if stock_decreased and bought_from_cart:
+        stock_decreased = False
+
     # 🎯 1. 購入・補充した時の処理（まとめ買い含む）
     # 新しいサイクルの始まりとして、1個目の使用開始日を「今日」にセット
     if stock_increased or bought_from_cart:
