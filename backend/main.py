@@ -133,18 +133,13 @@ def batch_check_and_notify():
 
         for item in items:
             if item.last_purchased_at and item.avg_cycle_days and item.avg_cycle_days > 0:
-                # 枯渇予測日 = 前回購入日 + 平均消費日数
                 estimated_depletion = item.last_purchased_at + timedelta(days=item.avg_cycle_days)
-                # 残り日数計算
                 remaining_days = (estimated_depletion - today_jst).days
 
-                # 残り3日以下が通知対象
-            if remaining_days <= 3:
-                # 設定が「初日のみ（first_day）」かつ「既に通知済み」ならリストに入れない
-                if settings.notify_frequency == "first_day" and item.is_notified:
-                    continue
-                
-                alert_items.append(item)
+                if remaining_days <= 3:
+                    if settings.notify_frequency == "first_day" and item.is_notified:
+                        continue
+                    alert_items.append((item, remaining_days))
 
         # 3. Discord Webhookへの送信処理
         if alert_items:
@@ -263,6 +258,7 @@ def update_item(item_id: int, item: ItemUpdate, db: Session = Depends(get_db)):
     # 新しいサイクルの始まりとして、1個目の使用開始日を「今日」にセット
     if stock_increased or bought_from_cart:
         db_item.last_purchased_at = today
+        db_item.is_notified = False
 
     # 🎯 2. 「1個消費」した時の処理（マイナスボタンを押した、または枯渇してカートに入れた）
     if stock_decreased or put_into_cart:

@@ -216,27 +216,27 @@ function App() {
     fetchData();
   }, []);
 
- // アイテムの編集を保存する処理
+  // アイテムの編集を保存する処理
   const saveItemEdit = async (id, updatedData) => {
     try {
       const updatedItem = await updateItem(id, updatedData);
       setItems(items.map(item => item.id === id ? updatedItem : item));
-      return true; // 🌟 追加：成功したことを Inventory.jsx に教える
+      return true;
     } catch (error) {
-      console.error("更新エラー:", error);
-      setErrorMessage("アイテムの更新に失敗しました。"); // 🌟 追加：エラーメッセージを画面に出す
-      return false; // 🌟 追加：失敗したことを教える
+      console.error("エラー:", error);
+      setErrorMessage("アイテムの更新に失敗しました");
+      return false;
     }
   };
 
-  // updateItem を使って編集内容を保存する関数を追加
-  const saveItemEdit = async (id, updatedData) => {
+  const handleUpdateSettings = async (newSettings) => {
     try {
-      const updated = await updateItem(id, updatedData);
-      setItems(items.map(item => item.id === id ? updated : item));
-      setEditingItem(null); // 編集モード終了
+      const updated = await updateSettings(newSettings);
+      setSettings(updated);
+      setErrorMessage('');
     } catch (error) {
-      console.error("更新に失敗しました:", error);
+      console.error("設定更新エラー:", error);
+      setErrorMessage('設定の更新に失敗しました');
     }
   };
 
